@@ -18,6 +18,11 @@
     "value": true,
     "text": "Scale to Fill"
   },
+  "blur": {
+    "type": "checkbox",
+    "value": false,
+    "text": "Blur"
+  },
   "fpsLock": {
     "type": "checkbox",
     "value": true,

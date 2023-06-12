@@ -25,6 +25,7 @@ async function init() {
     uniforms: {
       u_tex0: { type: "t" },
       u_depth_tex0: { type: "t" },
+      u_blur: { value: false, type: "b" },
       u_texture_fill: { value: true, type: "b" },
       u_mouse: { value: new THREE.Vector2(0, 0), type: "v2" },
       u_threshold: { value: new THREE.Vector2(settings.xThreshold, settings.yThreshold) },
@@ -47,6 +48,7 @@ async function init() {
       uniform vec2 u_tex0_resolution;
       uniform vec2 u_resolution;
       uniform bool u_texture_fill;
+      uniform bool u_blur;
 
       varying vec2 vUv;
 
@@ -72,7 +74,8 @@ async function init() {
         vec4 depthMap = texture2D(u_depth_tex0, mirrored(UV));
         vec2 fake3d = vec2(UV.x + (depthMap.r - 0.5) * u_mouse.x / u_threshold.x, UV.y + (depthMap.r - 0.5) * u_mouse.y / u_threshold.y);
 
-        gl_FragColor = texture2D(u_tex0, mirrored(fake3d));
+        float lod = u_blur && depthMap.r < 0.5 ? 2. : 0.;
+        gl_FragColor = textureLod(u_tex0, mirrored(fake3d), lod);
       }
     `,
   });
@@ -162,6 +165,9 @@ function livelyPropertyListener(name, val) {
     case "stretch":
       material.uniforms.u_texture_fill.value = val;
       break;
+    case "blur":
+      material.uniforms.u_blur.value = val;
+      break;
     case "fpsLock":
       settings.fps = val ? 30 : 60;
       break;
@@ -187,6 +193,7 @@ function createWebUI() {
     .onChange(function () {
       material.uniforms.u_threshold.value.y = settings.yThreshold;
     });
+  gui.add(material.uniforms.u_blur, "value").name("Blur");
   gui.add(material.uniforms.u_texture_fill, "value").name("Scale to Fill");
 }
 
