@@ -1,9 +1,9 @@
 {
-  "AppVersion": "2.0.6.1",
-  "Title": "DepthMap",
+  "AppVersion": "2.0.6.6",
+  "Title": "AI depth wallpaper",
   "Thumbnail": "thumbnail.jpg",
   "Preview": "preview.gif",
-  "Desc": "DepthMap template wallpaper",
+  "Desc": "Depth map template wallpaper",
   "Author": "rocksdanister",
   "License": "See License.txt",
   "Contact": "https://github.com/rocksdanister/depthmap-wallpaper",
