@@ -4,7 +4,17 @@ const gui = new dat.GUI();
 let previousTime = 0;
 
 let scene, camera, renderer, material;
-let settings = { debug: false, fps: 30, parallaxVal: 1, xThreshold: 20, yThreshold: 35 };
+let settings = {
+  debug: false,
+  fps: 60,
+  parallaxVal: 1,
+  xThreshold: 30,
+  yThreshold: 15,
+  xThresholdMax: 50,
+  yThresholdMax: 50,
+  xThresholdMin: 1,
+  yThresholdMin: 1,
+};
 const cursor = {
   x: 0,
   y: 0,
@@ -157,10 +167,10 @@ document.addEventListener("touchend", (event) => {
 function livelyPropertyListener(name, val) {
   switch (name) {
     case "xThreshold":
-      material.uniforms.u_threshold.value.x = 51 - val;
+      material.uniforms.u_threshold.value.x = xThresholdMax - val + 1;
       break;
     case "yThreshold":
-      material.uniforms.u_threshold.value.y = 51 - val;
+      material.uniforms.u_threshold.value.y = yThresholdMax - val + 1;
       break;
     case "stretch":
       material.uniforms.u_texture_fill.value = val;
@@ -177,8 +187,8 @@ function livelyPropertyListener(name, val) {
 function createWebUI() {
   gui
     .add(settings, "xThreshold")
-    .min(1)
-    .max(50)
+    .min(xThresholdMin)
+    .max(xThresholdMax)
     .step(1)
     .name("X Threshold")
     .onChange(function () {
@@ -186,8 +196,8 @@ function createWebUI() {
     });
   gui
     .add(settings, "yThreshold")
-    .min(1)
-    .max(50)
+    .min(yThresholdMin)
+    .max(yThresholdMax)
     .step(1)
     .name("Y Threshold")
     .onChange(function () {
