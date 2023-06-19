@@ -167,10 +167,10 @@ document.addEventListener("touchend", (event) => {
 function livelyPropertyListener(name, val) {
   switch (name) {
     case "xThreshold":
-      material.uniforms.u_threshold.value.x = xThresholdMax - val + 1;
+      material.uniforms.u_threshold.value.x = settings.xThresholdMax - val + 1;
       break;
     case "yThreshold":
-      material.uniforms.u_threshold.value.y = yThresholdMax - val + 1;
+      material.uniforms.u_threshold.value.y = settings.yThresholdMax - val + 1;
       break;
     case "stretch":
       material.uniforms.u_texture_fill.value = val;
@@ -187,21 +187,21 @@ function livelyPropertyListener(name, val) {
 function createWebUI() {
   gui
     .add(settings, "xThreshold")
-    .min(xThresholdMin)
-    .max(xThresholdMax)
+    .min(settings.xThresholdMin)
+    .max(settings.xThresholdMax)
     .step(1)
     .name("X Threshold")
     .onChange(function () {
-      material.uniforms.u_threshold.value.x = settings.xThreshold;
+      material.uniforms.u_threshold.value.x = settings.xThresholdMax - settings.xThreshold + 1;
     });
   gui
     .add(settings, "yThreshold")
-    .min(yThresholdMin)
-    .max(yThresholdMax)
+    .min(settings.yThresholdMin)
+    .max(settings.yThresholdMax)
     .step(1)
     .name("Y Threshold")
     .onChange(function () {
-      material.uniforms.u_threshold.value.y = settings.yThreshold;
+      material.uniforms.u_threshold.value.y = settings.yThresholdMax - settings.yThreshold + 1;
     });
   gui.add(material.uniforms.u_blur, "value").name("Blur");
   gui.add(material.uniforms.u_texture_fill, "value").name("Scale to Fill");
