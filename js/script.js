@@ -1,7 +1,9 @@
 const container = document.getElementById("container");
-let clock = new THREE.Clock();
 const gui = new dat.GUI();
-let previousTime = 0;
+let isPaused = false;
+let wasPaused = true;
+let originX = -1;
+let originY = -1;
 
 let scene, camera, renderer, material;
 let settings = {
@@ -38,9 +40,17 @@ async function init() {
       u_blur: { value: false, type: "b" },
       u_texture_fill: { value: true, type: "b" },
       u_mouse: { value: new THREE.Vector2(0, 0), type: "v2" },
-      u_threshold: { value: new THREE.Vector2(settings.xThreshold, settings.yThreshold) },
-      u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight), type: "v2" },
-      u_tex0_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight), type: "v2" },
+      u_threshold: {
+        value: new THREE.Vector2(settings.xThreshold, settings.yThreshold),
+      },
+      u_resolution: {
+        value: new THREE.Vector2(window.innerWidth, window.innerHeight),
+        type: "v2",
+      },
+      u_tex0_resolution: {
+        value: new THREE.Vector2(window.innerWidth, window.innerHeight),
+        type: "v2",
+      },
     },
     vertexShader: `
           varying vec2 vUv;        
@@ -118,22 +128,21 @@ function render() {
     requestAnimationFrame(render);
   }, 1000 / settings.fps);
 
-  //reset every 6hr
-  if (clock.getElapsedTime() > 21600) {
-    clock = new THREE.Clock();
-    previousTime = 0;
+  // Reset to prevent overflow
+  if (cursor.lerpX > 21600 || cursor.lerpY > 21600)
+  {
+    cursor.x = 0;
+    cursor.y = 0;
+    cursor.lerpX = 0;
+    cursor.lerpY = 0;
   }
-
-  const elapsedTime = clock.getElapsedTime();
-  const deltaTime = elapsedTime - previousTime;
-  previousTime = elapsedTime;
 
   // Set Cursor Variables
   const parallaxX = cursor.x * 0.5;
   const parallaxY = -cursor.y * 0.5;
 
-  cursor.lerpX += (parallaxX - cursor.lerpX) * 5 * deltaTime;
-  cursor.lerpY += (parallaxY - cursor.lerpY) * 5 * deltaTime;
+  cursor.lerpX += (parallaxX - cursor.lerpX) * 5 * 0.016;
+  cursor.lerpY += (parallaxY - cursor.lerpY) * 5 * 0.016;
 
   // Mouse Positioning Uniform Values
   material.uniforms.u_mouse.value = new THREE.Vector2(cursor.lerpX, cursor.lerpY);
@@ -141,27 +150,72 @@ function render() {
   renderer.render(scene, camera);
 }
 
+function livelyWallpaperPlaybackChanged(data) {
+  var obj = JSON.parse(data);
+  isPaused = obj.IsPaused;
+
+  if (isPaused) {
+    // cursor.x = 0;
+    // cursor.y = 0;
+    // cursor.lerpX = 0;
+    // cursor.lerpY = 0;
+    wasPaused = true;
+  }
+}
+
+let lastX = 0;
+let lastY = 0;
 //depth input
 document.addEventListener("mousemove", (event) => {
-  cursor.x = event.clientX / window.innerWidth - 0.5;
-  cursor.y = event.clientY / window.innerHeight - 0.5;
+  if (isPaused) return;
+
+  if (wasPaused) {
+    originX = event.pageX;
+    originY = event.pageY;
+
+    wasPaused = false;
+  }
+
+  cursor.x = clamp((originX - event.pageX) / window.innerWidth, "x");
+  cursor.y = clamp((originY - event.pageY) / window.innerHeight, "y");
+
+  lastX = cursor.x;
+  lastY = cursor.y;
 });
 
-document.addEventListener("mouseout", (event) => {
-  cursor.x = 0;
-  cursor.y = 0;
-});
+function clamp(value, origin) {
+  let fixedVal = value;
+  if (value < -0.5) {
+    fixedVal = -0.5;
+    let diff = value + 0.5;
 
-document.addEventListener("touchmove", (event) => {
-  const touch = event.touches[0];
-  cursor.x = touch.pageX / window.innerWidth - 0.5;
-  cursor.y = touch.pageY / window.innerHeight - 0.5;
-});
+    if (origin == "x") originX -= diff * window.innerWidth;
+    else originY -= diff * window.innerHeight;
+  } else if (value > 0.5) {
+    fixedVal = 0.5;
+    let diff = value - 0.5;
 
-document.addEventListener("touchend", (event) => {
-  cursor.x = 0;
-  cursor.y = 0;
-});
+    if (origin == "x") originX -= diff * window.innerWidth;
+    else originY -= diff * window.innerHeight;
+  }
+  return fixedVal;
+}
+
+// document.addEventListener("mouseout", (event) => {
+//   cursor.x = 0;
+//   cursor.y = 0;
+// });
+
+// document.addEventListener("touchmove", (event) => {
+//   const touch = event.touches[0];
+//   cursor.x = touch.pageX / window.innerWidth - 0.5;
+//   cursor.y = touch.pageY / window.innerHeight - 0.5;
+// });
+
+// document.addEventListener("touchend", (event) => {
+//   cursor.x = 0;
+//   cursor.y = 0;
+// });
 
 //docs: https://github.com/rocksdanister/lively/wiki/Web-Guide-IV-:-Interaction
 function livelyPropertyListener(name, val) {
