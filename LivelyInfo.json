@@ -10,5 +10,6 @@
   "Type": 1,
   "FileName": "index.html",
   "Arguments": "--pause-event true",
+  "Tags": ["depth", "depthmap"],
   "IsAbsolutePath": false
 }
