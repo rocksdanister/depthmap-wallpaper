@@ -61,6 +61,10 @@ async function init() {
         `,
     fragmentShader: `
       precision mediump float;
+
+      #define gaussian_blur mat3(1, 2, 1, 2, 4, 2, 1, 2, 1) * 0.0625
+      #define box_blur mat3(1, 1, 1, 1, 1, 1, 1, 1, 1) * 0.1111
+
       uniform sampler2D u_tex0; 
       uniform sampler2D u_depth_tex0; 
       uniform vec2 u_mouse;
@@ -75,6 +79,22 @@ async function init() {
       vec2 mirrored(vec2 v) {
         vec2 m = mod(v,2.);
         return mix(m,2.0 - m, step(1.0 ,m));
+      }
+
+      vec4 convolute(vec2 uv, mat3 kernel)
+      {
+        vec4 color = vec4(0);
+        
+        const float direction[3] = float[3](-1.0, 0.0, 1.0);    
+        for (int x = 0; x < 3; x++)
+        {
+            for (int y = 0; y < 3; y++)
+            {
+                vec2 offset = vec2(direction[x], direction[y]) / u_resolution.xy;
+                color += texture(u_tex0, uv+offset) * kernel[x][y];
+            }
+        }
+        return color;
       }
 
       void main() {
@@ -94,8 +114,15 @@ async function init() {
         vec4 depthMap = texture2D(u_depth_tex0, mirrored(UV));
         vec2 fake3d = vec2(UV.x + (depthMap.r - 0.5) * u_mouse.x / u_threshold.x, UV.y + (depthMap.r - 0.5) * u_mouse.y / u_threshold.y);
 
-        float lod = u_blur && depthMap.r < 0.5 ? 2. : 0.;
-        gl_FragColor = textureLod(u_tex0, mirrored(fake3d), lod);
+        vec4 col = vec4(0);
+
+        //mip-map blur
+        //col = textureLod(u_tex0, mirrored(fake3d), u_blur && depthMap.r < 0.5 ? 2. : 0.);
+        //gaussian blur
+        col = u_blur && depthMap.r < 0.5 ? 
+          convolute(mirrored(fake3d), gaussian_blur) : texture(u_tex0, mirrored(fake3d));
+
+        gl_FragColor = col;
       }
     `,
   });
@@ -128,7 +155,7 @@ function render() {
     requestAnimationFrame(render);
   }, 1000 / settings.fps);
 
-  // Reset to prevent overflow
+  // If overflow
   if (cursor.lerpX > 21600 || cursor.lerpY > 21600)
   {
     cursor.x = 0;
@@ -163,8 +190,6 @@ function livelyWallpaperPlaybackChanged(data) {
   }
 }
 
-let lastX = 0;
-let lastY = 0;
 //depth input
 document.addEventListener("mousemove", (event) => {
   if (isPaused) return;
@@ -178,9 +203,6 @@ document.addEventListener("mousemove", (event) => {
 
   cursor.x = clamp((originX - event.pageX) / window.innerWidth, "x");
   cursor.y = clamp((originY - event.pageY) / window.innerHeight, "y");
-
-  lastX = cursor.x;
-  lastY = cursor.y;
 });
 
 function clamp(value, origin) {
